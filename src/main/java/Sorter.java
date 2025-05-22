@@ -4,7 +4,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class Sorter {
-    private final HashMap<Integer, ArrayList<Integer>> bottles = new HashMap<>();
+    private final HashMap<Integer, Bottle> bottles = new HashMap<>();
 
     void init() {
 
@@ -27,7 +27,7 @@ public class Sorter {
 
         var count = 0;
         for (String line : lines) {
-            var bottle = new ArrayList<Integer>();
+            var bottle = new Bottle(4);
 
             String[] parts = line.trim().split("\\s+");
 
@@ -55,7 +55,7 @@ public class Sorter {
 
     }
 
-    private void sort(HashMap<Integer, ArrayList<Integer>> bottles) {
+    private void sort(HashMap<Integer, Bottle> bottles) {
         int count = 0;
         String lastMove = "";
         while (!isSorted(bottles)) {
@@ -75,20 +75,19 @@ public class Sorter {
             }
         }
         System.out.println("Я ВСЕ, ХОДОВ: " + count);
-        return;
     }
 
 
-    private boolean isSorted(HashMap<Integer, ArrayList<Integer>> bottles) {
+    private boolean isSorted(HashMap<Integer, Bottle> bottles) {
         for (Integer key : bottles.keySet()) {
-            if (bottles.get(key).stream().distinct().count() > 1) {
+            if (!bottles.get(key).isCollected()) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean canSort(HashMap<Integer, ArrayList<Integer>> bottles, String lastMove) {
+    private boolean canSort(HashMap<Integer, Bottle> bottles, String lastMove) {
         for (Integer fromBottle : bottles.keySet()) {
             for (Integer toBottle : bottles.keySet()) {
                 if (!fromBottle.equals(toBottle) && canPour(bottles, fromBottle, toBottle, lastMove)) {
@@ -100,59 +99,47 @@ public class Sorter {
     }
 
 
-    private boolean canPour(HashMap<Integer, ArrayList<Integer>> bottles, int from, int to, String lastMove) {
+    private boolean canPour(HashMap<Integer, Bottle> bottles, int from, int to, String lastMove) {
 
-        ArrayList<Integer> bottleFrom = bottles.get(from);
-        ArrayList<Integer> bottleTo = bottles.get(to);
+        Bottle bottleFrom = bottles.get(from);
+        Bottle bottleTo = bottles.get(to);
         if (String.format("%d%d", to, from).equals(lastMove)) {
             return false;
         }
         if (from == to) {
             return false;
         }
-        if (bottleFrom.stream().filter((x) -> x < 0).count() == bottleFrom.size()) {
+        if (bottleFrom.isEmpty()) {
             return false;
         }
-        if (bottleTo.stream().filter((x) -> x > 0).count() == bottleFrom.size()) {
+        if (bottleTo.isFull()) {
             return false;
         }
-        int upperNumberFrom = bottleFrom.stream().filter(x -> x > 0).findFirst().orElse(-1);
-        int upperNumberTo = bottleTo.stream().filter(x -> x > 0).findFirst().orElse(-1);
-        if (upperNumberFrom != upperNumberTo && upperNumberTo != -1) {
+        int upperNumberFrom = bottleFrom.getFirst();
+        int upperNumberTo = bottleTo.getFirst();
+        if (upperNumberFrom != upperNumberTo && !bottleTo.isEmpty()) {
             return false;
         }
         return true;
     }
 
 
-    public void pour(HashMap<Integer, ArrayList<Integer>> bottles, int from, int to) {
-        ArrayList<Integer> bottleFrom = bottles.get(from);
-        ArrayList<Integer> bottleTo = bottles.get(to);
+    public void pour(HashMap<Integer, Bottle> bottles, int from, int to) {
+        Bottle bottleFrom = bottles.get(from);
+        Bottle bottleTo = bottles.get(to);
 
-        for (int i = 0; i < bottleFrom.size(); i++) {
-            int current = bottleFrom.get(i);
-            if (current > 0) {
-                int number = bottleFrom.remove(i);
-                bottleFrom.add(i, -1);
-                for (int j = bottleTo.size() - 1; j >= 0; j--) {
-                    if (bottleTo.get(j) < 0) {
-                        bottleTo.remove(j);
-                        bottleTo.add(j, number);
-                        break;
-                    }
-                }
-                if (((i + 1) < bottleFrom.size() && bottleFrom.get(i + 1) != current) || (bottleTo.stream().filter((x) -> x > 0).count()) == bottleTo.size()) {
-                    break;
-                }
-            }
+        do{
+            int upperNumberFrom = bottleFrom.removeFirst();
+            bottleTo.addFirst(upperNumberFrom);
         }
+        while (!bottleTo.isFull()&&!bottleTo.isFull()&&bottleFrom.getFirst()==bottleTo.getFirst());
         System.out.printf("%d - %d\n", from, to);
     }
 
 
-    public void drawBottles(HashMap<Integer, ArrayList<Integer>> bottles, int volume) {
+    public void drawBottles(HashMap<Integer, Bottle> bottles, int volume) {
         // Преобразуем в список для удобного доступа по индексу
-        List<ArrayList<Integer>> bottleList = new ArrayList<>(bottles.values());
+        List<Bottle> bottleList = new ArrayList<>(bottles.values());
 
         // Обрабатываем бутылки группами по 8
         for (int i = 0; i < bottleList.size(); i += 8) {
@@ -165,10 +152,8 @@ public class Sorter {
             // Выводим содержимое (5 строк)
             for (int line = 0; line < volume; line++) {
                 for (int j = i; j < i + 8 && j < bottleList.size(); j++) {
-                    ArrayList<Integer> bottle = bottleList.get(j);
-                    // Получаем элементы
-                    Integer value = bottle.get(line);
-
+                    Bottle bottle = bottleList.get(j);
+                    int value = bottle.get(line);
                     System.out.printf("  ║ %-2s ║  ", value > 0 ? value : " ");
                 }
                 System.out.println();
