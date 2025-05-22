@@ -19,7 +19,7 @@ public class Sorter {
         var V = 4;
         List<String> lines;
         try {
-            lines = Files.readAllLines(Paths.get("C:/Users/Александр/IdeaProjects/BottleGame/src/main/java/file.txt"));
+            lines = Files.readAllLines(Paths.get("./src/main/java/file.txt"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -47,12 +47,10 @@ public class Sorter {
                 bottle.add(input > 0 ? input : -1);
             }*/
 
-        System.out.println(bottles);
+
         drawBottles(bottles, V);
-        pour(bottles,0,12);
-        pour(bottles,0,13);
+        sort(bottles);
         drawBottles(bottles, V);
-        System.out.println(bottles);
 
 
     }
