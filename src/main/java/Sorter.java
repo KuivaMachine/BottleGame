@@ -1,142 +1,121 @@
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
+/**
+ * Класс для сортировки жидкостей в пробирках
+ */
 public class Sorter {
     private final HashMap<Integer, Bottle> bottles = new HashMap<>();
+    private int V = 0;
+
+    /**
+     * Основной метод инициализации и запуска сортировки
+     */
+    public void init() {
+        readInputFromConsole();
+        LinkedList<Move> history = new LinkedList<>();
+        history.add(new Move()); // Пустой начальный ход
+
+        System.out.println("Исходная позиция:");
+        drawBottles(bottles);
+
+        sort(bottles, history, 0);
+        System.out.println("Результат:\n");
+        drawBottles(bottles);
+        System.out.println("Последовательность ходов:\n");
+        printHistory(history);
+
+    }
+
+    /**
+     * Чтение входных данных с консоли с валидацией
+     */
+    private void readInputFromConsole() {
+        Scanner scanner = new Scanner(System.in);
 
 
-    void init() {
-
-        Mixer mixer = new Mixer(4, 10, 16);
-        HashMap<Integer, Bottle> botles = mixer.generateBottlesList();
-        drawBottles(botles, 4);
-        mix(botles);
-        drawBottles(botles, 4);
-        /*var scanner = new Scanner(System.in);
-        System.out.println("Сколько бутылок?");
+        System.out.println("Сколько всего пробирок?");
         var N = scanner.nextInt();
-        System.out.println("Сколько жидкостей?");
-        var M = scanner.nextInt();
-        System.out.println("Объем?");
-        var V = scanner.nextInt();
+        while (N <= 2) {
+            System.out.println("Количество пробирок должно быть не меньше 2.\nВведите число пробирок:");
+            N = scanner.nextInt();
+        }
 
-        for (int i = 0; i < N; i++) {
+        System.out.println("Сколько всего жидкостей?");
+        var M = scanner.nextInt();
+        while (M >= N || M < 0) {
+            System.out.printf("Количество жидкостей должно быть от 1 до %d.\nВведите количество жидкостей:\n", N - 1);
+            M = scanner.nextInt();
+        }
+
+        System.out.println("Какой у пробирок объем?");
+        V = scanner.nextInt();
+
+
+        System.out.println("Введите содержимое пробирки, в одну строку через пробел.\nПример: \"1 3 4 1\"");
+        for (int i = 0; i < M; i++) {
             Bottle bottle = new Bottle(V);
-            System.out.printf("Бутылка %d:\n", i);
+            System.out.printf("Пробирка %d:\n", i);
             for (int j = 0; j < V; j++) {
                 int input = scanner.nextInt();
                 bottle.add(input > 0 ? input : -1);
             }
-            bottles.put(i,bottle);
-        }
-*/
-       /* var V = 4;
-        List<String> lines;
-        try {
-            lines = Files.readAllLines(Paths.get("./src/main/java/file.txt"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            bottles.put(i, bottle);
         }
 
-
-        var count = 0;
-        for (String line : lines) {
-            var bottle = new Bottle(4);
-
-            String[] parts = line.trim().split("\\s+");
-
-            if (parts.length != 4) continue;
-            for (String x : parts) {
-                bottle.add(Integer.parseInt(x));
-            }
-            bottles.put(count, bottle);
-            count++;
-        }*/
-
-
-//        LinkedList<Move> history = new LinkedList<>();
-//        Move emptyMove = new Move();
-//        history.add(emptyMove);
-//        drawBottles(bottles, V);
-//        sort(bottles, history );
-
-        /*drawBottles(bottles, V);
-        LinkedList<Move> history = new LinkedList<>();
-        Move emptyMove = new Move();
-        history.add(emptyMove);
-        if (sort(bottles, history, 0)) {
-            System.out.println("Решение найдено!");
-        } else {
-            System.out.println("Решение не найдено");
-        }
-        drawBottles(bottles, V);*/
-
-    }
-
-
-    private void mix(HashMap<Integer, Bottle> bottles) {
-        int count = 0;
-        while (count<100) {
-            for (Integer fromBottle : bottles.keySet()) {
-                for (Integer toBottle : bottles.keySet()) {
-                    if (canPour(bottles, fromBottle, toBottle)) {
-
-                        Bottle bottleFrom = bottles.get(fromBottle);
-                        Bottle bottleTo = bottles.get(toBottle);
-                        int upperNumberFrom = bottleFrom.removeFirst();
-                        bottleTo.addFirst(upperNumberFrom);
-                        count++;
-
-                    }
-
-                }
-            }
+        // Добавление пустых пробирок
+        for (int i = M; i < N; i++) {
+            Bottle bottle = new Bottle(V);
+            bottle.fillWithMinusOne();
+            bottles.put(i, bottle);
         }
     }
 
-    private boolean isMixed(HashMap<Integer,Bottle> bottles, int M) {
-        int count = 0;
-         for (Integer key : bottles.keySet()) {
-             if (bottles.get(key).isFull()&&bottles.get(key).isMixed()){
-                count++;
-             }
-         }
-         return count==M;
-    }
 
-
+    /**
+     * Рекурсивный метод сортировки пробирок
+     *
+     * @param bottles текущее состояние пробирок
+     * @param history история ходов
+     * @param depth   текущая глубина рекурсии
+     * @return true если решение найдено, false в противном случае
+     */
     private boolean sort(HashMap<Integer, Bottle> bottles, LinkedList<Move> history, int depth) {
-        if (depth > 50) return false;
+        //Защита от бесконечной рекурсии
+        if (depth > 100) {
+            System.out.println("Решение не найдено. Последняя позиция:");
+            drawBottles(bottles);
+            System.exit(0);
+        }
+        //Выход, если отсортировано
         if (isSorted(bottles)) {
             return true;
         }
 
+        //Расчет возможных ходов
         List<Move> possibleMoves = calculateMoves(bottles, history.getLast());
+        //Выбор лучшего хода
         Move bestMove = selectBestMove(possibleMoves);
 
+        //Если нет допустимых ходов
         if (bestMove.priority == 0) {
-            return false; // Нет допустимых ходов
+            return false;
         }
 
-        // Пробуем основной ход
+        //Пробуем основной ход
         pour(bottles, bestMove.from, bestMove.to);
+        //Записываем в историю
         history.addLast(bestMove);
 
         if (!sort(bottles, history, depth + 1)) {
-            // Если зашли в тупик - откатываемся и пробуем альтернативы
+            // Если зашли в тупик - откатываемся
             undoLastPour(bottles, history);
-
+            // Пробуем альтернативные ходы
             for (Move alternative : bestMove.alternatives) {
                 pour(bottles, alternative.from, alternative.to);
                 history.addLast(alternative);
-
                 if (sort(bottles, history, depth + 1)) {
                     return true;
                 }
-
                 undoLastPour(bottles, history);
             }
             return false;
@@ -144,30 +123,25 @@ public class Sorter {
         return true;
     }
 
-
+    /**
+     * Отменяет последний ход
+     */
     private void undoLastPour(HashMap<Integer, Bottle> bottles, LinkedList<Move> history) {
         if (history.isEmpty()) return;
 
         Move lastMove = history.removeLast();
-        Bottle bottleFrom = bottles.get(lastMove.to); // Инвертируем направление
-        Bottle bottleTo = bottles.get(lastMove.from);
+        Bottle fromBottle = bottles.get(lastMove.to); // Инвертируем направление
+        Bottle toBottle = bottles.get(lastMove.from);
 
         do {
-            int upperNumberFrom = bottleFrom.removeFirst();
-            bottleTo.addFirst(upperNumberFrom);
-        }
-        while (!bottleTo.isFull() && !bottleTo.isFull() && bottleFrom.getFirst() == bottleTo.getFirst());
+            int liquid = fromBottle.removeFirst();
+            toBottle.addFirst(liquid);
+        } while (!toBottle.isFull() && fromBottle.getFirst() == toBottle.getFirst());
     }
 
-    private HashMap<Integer, Bottle> deepCopy(HashMap<Integer, Bottle> oldBottles) {
-        return oldBottles.entrySet().stream()
-                .collect(
-                        HashMap::new,
-                        (map, entry) -> map.put(entry.getKey(), new Bottle(entry.getValue())),
-                        HashMap::putAll
-                );
-    }
-
+    /**
+     * Вычисляет все возможные ходы
+     */
     private List<Move> calculateMoves(HashMap<Integer, Bottle> bottles, Move lastMove) {
         List<Move> moves = new ArrayList<>();
         for (Integer from : bottles.keySet()) {
@@ -182,47 +156,44 @@ public class Sorter {
         return moves;
     }
 
+    /**
+     * Вычисляет приоритет хода
+     */
     private int calculateMovePriority(HashMap<Integer, Bottle> bottles, int from, int to, Move lastMove) {
         Bottle bottleFrom = new Bottle(bottles.get(from));
         Bottle bottleTo = new Bottle(bottles.get(to));
 
         int priority = 0;
 
+        //Симулируем переливание
         do {
-            int upperNumberFrom = bottleFrom.removeFirst();
-            bottleTo.addFirst(upperNumberFrom);
-        }
-        while (!bottleTo.isFull() && bottleFrom.getFirst() == bottleTo.getFirst());
+            int liquid = bottleFrom.removeFirst();
+            bottleTo.addFirst(liquid);
+        } while (!bottleTo.isFull() && bottleFrom.getFirst() == bottleTo.getFirst());
 
-        // Высший приоритет - завершение пробирки
+        //Приоритеты:
         if (bottleTo.isCollected() && !bottleFrom.isEmpty()) {
-            priority += 10;
+            priority += 10; //завершение пробирки
         }
-
-        // Средний приоритет - освобождение пробирки
         if (bottleFrom.isEmpty() && !bottles.get(to).isEmpty()) {
-            priority += 5;
+            priority += 5; //освобождение пробирки
         }
-        // Низкий приоритет - обычное объединение
         priority += 3;
 
-        //ЕСЛИ ХОД ОБРАТНЫЙ ПРОШЛОМУ
+        // Штраф за обратный ход
         if (from == lastMove.to && to == lastMove.from) {
             priority -= 1;
         }
-        if (bottleTo.isCoupleBottom() && bottleTo.getFilling() > 2) {
-            priority -= 2;
-        }
-        if (bottleTo.hasClosed()) {
-            priority -= 1;
-        }
+
         return priority;
     }
 
-
+    /**
+     * Выбирает лучший ход из возможных
+     */
     private Move selectBestMove(List<Move> possibleMoves) {
         if (possibleMoves.isEmpty()) {
-            return new Move();
+            return new Move(); // Пустой ход
         }
 
         // Находим максимальный приоритет
@@ -241,11 +212,12 @@ public class Sorter {
         for (int i = 1; i < bestMoves.size(); i++) {
             primaryMove.addAlternativeMove(bestMoves.get(i));
         }
-
         return primaryMove;
     }
 
-
+    /**
+     * Проверяет, отсортированы ли пробирки
+     */
     private boolean isSorted(HashMap<Integer, Bottle> bottles) {
         for (Integer key : bottles.keySet()) {
             if (!bottles.get(key).isCollected()) {
@@ -255,98 +227,77 @@ public class Sorter {
         return true;
     }
 
-    private boolean canSort(HashMap<Integer, Bottle> bottles) {
-        for (Integer fromBottle : bottles.keySet()) {
-            for (Integer toBottle : bottles.keySet()) {
-                if (!fromBottle.equals(toBottle) && canPour(bottles, fromBottle, toBottle)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean test_canPour(HashMap<Integer, Bottle> bottles, int from, int to) {
-
-        Bottle bottleFrom = bottles.get(from);
-        Bottle bottleTo = bottles.get(to);
-        if (from == to) {
-            return false;
-        }
-        if (bottleFrom.isEmpty()) {
-            return false;
-        }
-        if (bottleTo.isFull()) {
-            return false;
-        }
-
-        return true;
-    }
-
+    /**
+     * Проверяет возможность переливания
+     */
     private boolean canPour(HashMap<Integer, Bottle> bottles, int from, int to) {
-
         Bottle bottleFrom = bottles.get(from);
         Bottle bottleTo = bottles.get(to);
+        //Если пробирки совпадают
         if (from == to) {
             return false;
         }
+        //Если пробирка А пустая
         if (bottleFrom.isEmpty()) {
             return false;
         }
+        //Если пробирка В полная
         if (bottleTo.isFull()) {
             return false;
         }
         int upperNumberFrom = bottleFrom.getFirst();
         int upperNumberTo = bottleTo.getFirst();
-        if (upperNumberFrom != upperNumberTo && !bottleTo.isEmpty()) {
-            return false;
-        }
-        return true;
+        //Если в пробирке B верхняя жидкость того же цвета, либо пробирка B пуста
+        return upperNumberFrom == upperNumberTo || bottleTo.isEmpty();
     }
 
-
+    /**
+     * Выполняет переливание
+     */
     public void pour(HashMap<Integer, Bottle> bottles, int from, int to) {
-        Bottle bottleFrom = bottles.get(from);
-        Bottle bottleTo = bottles.get(to);
+        Bottle fromBottle = bottles.get(from);
+        Bottle toBottle = bottles.get(to);
 
         do {
-            int upperNumberFrom = bottleFrom.removeFirst();
-            bottleTo.addFirst(upperNumberFrom);
-        }
-        while (!bottleTo.isFull() && !bottleTo.isFull() && bottleFrom.getFirst() == bottleTo.getFirst());
-        System.out.printf("%d - %d\n", from, to);
+            int liquid = fromBottle.removeFirst();
+            toBottle.addFirst(liquid);
+        } while (!toBottle.isFull() && fromBottle.getFirst() == toBottle.getFirst());
     }
 
+    /**
+     * Выводит историю ходов
+     */
+    private void printHistory(LinkedList<Move> moves) {
+        moves.stream().forEach(move -> System.out.printf("%d -> %d\n", move.from, move.to));
+    }
 
-    public void drawBottles(HashMap<Integer, Bottle> bottles, int volume) {
-        // Преобразуем в список для удобного доступа по индексу
+    /**
+     * Отрисовывает текущее состояние пробирок
+     */
+    public void drawBottles(HashMap<Integer, Bottle> bottles) {
         List<Bottle> bottleList = new ArrayList<>(bottles.values());
 
-        // Обрабатываем бутылки группами по 8
         for (int i = 0; i < bottleList.size(); i += 8) {
-            // Выводим верхушки бутылок
+            // Верхушки пробирок
             for (int j = i; j < i + 8 && j < bottleList.size(); j++) {
                 System.out.print("  ╔    ╗  ");
             }
             System.out.println();
 
-            // Выводим содержимое (5 строк)
-            for (int line = 0; line < volume; line++) {
+            // Содержимое пробирок
+            for (int line = 0; line < V; line++) {
                 for (int j = i; j < i + 8 && j < bottleList.size(); j++) {
-                    Bottle bottle = bottleList.get(j);
-                    int value = bottle.get(line);
+                    int value = bottleList.get(j).get(line);
                     System.out.printf("  ║ %-2s ║  ", value > 0 ? value : " ");
                 }
                 System.out.println();
             }
 
-            // Выводим донышки бутылок
+            // Основания пробирок
             for (int j = i; j < i + 8 && j < bottleList.size(); j++) {
                 System.out.print("  ╚════╝  ");
             }
             System.out.println("\n");
         }
     }
-
-
 }

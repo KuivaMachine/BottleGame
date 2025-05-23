@@ -4,9 +4,9 @@ public class Game {
     public static void main(String[] args) {
         Sorter sorter = new Sorter();
 
-        sorter.init();
 
-//        printBigHello();
+       printBigHello();
+       sorter.init();
 
     }
 
@@ -18,7 +18,7 @@ public class Game {
                 "██╔═══╝  ██╔══██╗  ██║  ╚██╗ ██╔╝  ██╔══╝       ██║   ",
                 "██║      ██║  ██║  ██║   ╚████╔╝   ███████╗     ██║   ",
                 "╚═╝      ╚═╝  ╚═╝  ╚═╝    ╚═══╝    ╚══════╝     ╚═╝   ",
-                "\n".repeat(6)};
+                "\n"};
 
         for (String line : helloArt) {
             System.out.println(line);
