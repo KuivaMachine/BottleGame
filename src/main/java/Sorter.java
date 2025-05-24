@@ -62,7 +62,7 @@ public class Sorter {
             bottles.put(i, bottle);
         }
 
-        // Добавление пустых пробирок
+        //Добавление пустых пробирок
         for (int i = M; i < N; i++) {
             Bottle bottle = new Bottle(V);
             bottle.fillWithMinusOne();
@@ -268,7 +268,7 @@ public class Sorter {
      * Выводит историю ходов
      */
     private void printHistory(LinkedList<Move> moves) {
-        moves.stream().forEach(move -> System.out.printf("%d -> %d\n", move.from, move.to));
+        moves.stream().filter((move -> !(move.from==move.to))).forEach(move -> System.out.printf("%d -> %d\n", move.from, move.to));
     }
 
     /**

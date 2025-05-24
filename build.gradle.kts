@@ -20,3 +20,9 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "Game"
+    }
+    archiveBaseName.set("BottleGame")
+}
